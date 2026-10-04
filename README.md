@@ -11,6 +11,7 @@ Bot de WhatsApp que recibe enlaces de TikTok, descarga el video **sin marca de a
 - Convierte a WebP animado cumpliendo las reglas de WhatsApp: **512×512 px**, **sin audio**, **10–15 fps**, **< 500 KB** (reintenta con más compresión si hace falta).
 - **Recorte inteligente:** detecta bordes negros incrustados con `cropdetect`, los elimina y recorta a cuadrado.
 - Flag `-o` para conservar el video original (sin recortar, con relleno transparente).
+- Acepta también **enlaces directos a stickers de TikTok** (`.awebp` de `ibyteimg.com`, p. ej. al arrastrar un sticker desde TikTok web) y los convierte a sticker de WhatsApp en 512×512.
 - Latencia aleatoria "humana" (marcar como leído, "escribiendo…", pausas entre trabajos) para reducir el riesgo de detección.
 - Limpieza automática de archivos temporales en un bloque `finally`.
 - Autenticación local persistente (`LocalAuth`): el QR se escanea una sola vez.
@@ -23,8 +24,9 @@ Envía un mensaje al bot (o desde otro chat donde esté activo):
 | --- | --- |
 | `https://vt.tiktok.com/XXXX/` | Sticker recortado a cuadrado (sin bordes negros) |
 | `-o https://vt.tiktok.com/XXXX/` | Sticker con el encuadre original (relleno transparente) |
+| `https://...ibyteimg.com/...awebp?...` | Sticker de TikTok reescalado a 512×512 |
 
-El flag `-o` puede ir antes o después del enlace.
+El flag `-o` puede ir antes o después del enlace. Los enlaces de stickers de TikTok están firmados y caducan (parámetro `x-expires`), así que hay que enviarlos poco después de copiarlos.
 
 ## Requisitos
 

@@ -111,13 +111,13 @@ function runConversion({ fps, quality, duration }, crop, bounds) {
 /**
  * Convierte temp/video_in.mp4 -> temp/sticker_out.webp (512x512, sin audio, 10-15 fps, <500 KB).
  * Reintenta con más compresión hasta cumplir el límite de peso.
- * @param {{ crop?: boolean }} [options] crop=true (por defecto) quita bordes negros y recorta a cuadrado; false conserva el encuadre original
+ * @param {{ crop?: boolean, detect?: boolean }} [options] crop=true (por defecto) quita bordes negros y recorta a cuadrado; false conserva el encuadre original. detect=false omite cropdetect (p. ej. stickers, que ya son cuadrados)
  * @returns {Promise<string>} ruta del WebP generado
  */
-async function convertToSticker({ crop = true } = {}) {
+async function convertToSticker({ crop = true, detect = true } = {}) {
   if (!fs.existsSync(VIDEO_IN_PATH)) throw new Error('No existe temp/video_in.mp4.');
 
-  const bounds = crop ? await detectContentBounds() : null;
+  const bounds = crop && detect ? await detectContentBounds() : null;
   if (bounds) console.log(`[ffmpeg] Bordes detectados, área útil: ${bounds.w}x${bounds.h}+${bounds.x}+${bounds.y}`);
 
   for (const attempt of STICKER.ATTEMPTS) {

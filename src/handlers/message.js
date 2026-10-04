@@ -2,13 +2,14 @@ const fs = require('fs');
 const { MessageMedia } = require('whatsapp-web.js');
 const {
   TIKTOK_REGEX,
+  STICKER_URL_REGEX,
   ORIGINAL_FLAG_REGEX,
   VIDEO_IN_PATH,
   STICKER_OUT_PATH,
   STICKER,
   HUMANIZE,
 } = require('../config/constants');
-const { downloadTikTok } = require('../services/tiktok');
+const { downloadTikTok, downloadSticker } = require('../services/tiktok');
 const { convertToSticker } = require('../services/ffmpeg');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -29,7 +30,10 @@ function cleanTemp() {
 let queue = Promise.resolve();
 const sleepBetweenJobs = () => randomDelay(HUMANIZE.BETWEEN_JOBS_MS);
 
-async function processTikTok(client, msg, url, crop) {
+/**
+ * @param {{ kind: 'video'|'sticker', url: string, crop: boolean }} job
+ */
+async function processJob(client, msg, { kind, url, crop }) {
   let chat = null;
   try {
     // Simula comportamiento humano: espera, marca como leído y luego procesa
@@ -37,8 +41,14 @@ async function processTikTok(client, msg, url, crop) {
     chat = await msg.getChat().catch(() => null);
     if (chat) await chat.sendSeen().catch(() => {});
 
-    await downloadTikTok(url);
-    await convertToSticker({ crop });
+    if (kind === 'sticker') {
+      // Los stickers de TikTok ya son cuadrados: no hace falta cropdetect
+      await downloadSticker(url);
+      await convertToSticker({ crop: true, detect: false });
+    } else {
+      await downloadTikTok(url);
+      await convertToSticker({ crop });
+    }
 
     // "escribiendo..." y pausa antes de enviar
     if (chat) await chat.sendStateTyping().catch(() => {});
@@ -52,8 +62,9 @@ async function processTikTok(client, msg, url, crop) {
       quotedMessageId: msg.id._serialized,
     });
   } catch (err) {
-    console.error('[tiktok] Error:', err.message);
-    await msg.reply('❌ No pude convertir ese TikTok en sticker. Intenta con otro enlace.').catch(() => {});
+    console.error('[bot] Error:', err.message);
+    const what = kind === 'sticker' ? 'ese sticker (¿el enlace expiró?)' : 'ese TikTok en sticker';
+    await msg.reply(`❌ No pude convertir ${what}. Intenta con otro enlace.`).catch(() => {});
   } finally {
     cleanTemp(); // siempre, incluso si falló algo
     if (chat) await chat.clearState().catch(() => {});
@@ -67,16 +78,19 @@ function handleMessage(client) {
   return async (msg) => {
     if (!msg.body) return;
 
-    const match = msg.body.match(TIKTOK_REGEX);
-    if (!match) return;
+    // Enlace directo a un sticker de TikTok (.awebp) tiene prioridad sobre el enlace de video
+    const stickerMatch = msg.body.match(STICKER_URL_REGEX);
+    const videoMatch = stickerMatch ? null : msg.body.match(TIKTOK_REGEX);
+    if (!stickerMatch && !videoMatch) return;
 
-    const url = match[0];
+    const kind = stickerMatch ? 'sticker' : 'video';
+    const url = (stickerMatch || videoMatch)[0];
     // Por defecto se recorta a cuadrado; con "-o" se conserva el video original (con padding)
     const crop = !ORIGINAL_FLAG_REGEX.test(msg.body);
-    console.log(`[tiktok] Enlace recibido de ${msg.from}: ${url} (${crop ? 'recorte' : 'original'})`);
+    console.log(`[bot] ${kind} recibido de ${msg.from}: ${url} (${crop ? 'recorte' : 'original'})`);
 
     // Tras cada trabajo se hace una pausa aleatoria antes de atender el siguiente
-    queue = queue.then(() => processTikTok(client, msg, url, crop)).then(sleepBetweenJobs);
+    queue = queue.then(() => processJob(client, msg, { kind, url, crop })).then(sleepBetweenJobs);
     return queue;
   };
 }

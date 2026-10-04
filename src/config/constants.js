@@ -14,6 +14,10 @@ module.exports = {
   // Detecta tiktok.com, www.tiktok.com, vm.tiktok.com, vt.tiktok.com, m.tiktok.com, etc.
   TIKTOK_REGEX: /https?:\/\/(?:[a-z0-9-]+\.)?tiktok\.com\/[^\s]+/i,
 
+  // Enlace directo a un sticker de TikTok (.awebp en el CDN de ByteDance), p. ej. al arrastrarlo desde TikTok web.
+  // Excluye ) y ] finales por si se pega en formato Markdown.
+  STICKER_URL_REGEX: /https?:\/\/[^\s)\]]*ibyteimg\.com[^\s)\]]*\.awebp[^\s)\]]*/i,
+
   // Detección automática de bordes negros (cropdetect) en modo recorte
   CROPDETECT: {
     SAMPLE_SECONDS: 5, // cuántos segundos del video se analizan

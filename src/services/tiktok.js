@@ -32,27 +32,41 @@ async function resolveNoWatermarkUrl(tiktokUrl) {
 }
 
 /**
- * Descarga el video sin marca de agua a temp/video_in.mp4.
- * @returns {Promise<string>} ruta del archivo descargado
+ * Descarga una URL a temp/video_in.mp4 (ffmpeg detecta el formato real por contenido).
  */
-async function downloadTikTok(tiktokUrl) {
+async function downloadToInput(url, headers = {}) {
   fs.mkdirSync(TEMP_DIR, { recursive: true });
 
-  const videoUrl = await resolveNoWatermarkUrl(tiktokUrl);
-
-  const response = await axios.get(videoUrl, {
+  const response = await axios.get(url, {
     responseType: 'stream',
-    headers: { 'User-Agent': USER_AGENT, Referer: 'https://www.tikwm.com/' },
+    headers: { 'User-Agent': USER_AGENT, ...headers },
     timeout: HTTP_TIMEOUT_MS,
   });
 
   await pipeline(response.data, fs.createWriteStream(VIDEO_IN_PATH));
 
   if (!fs.existsSync(VIDEO_IN_PATH) || fs.statSync(VIDEO_IN_PATH).size === 0) {
-    throw new Error('El video descargado está vacío.');
+    throw new Error('El archivo descargado está vacío.');
   }
 
   return VIDEO_IN_PATH;
 }
 
-module.exports = { downloadTikTok };
+/**
+ * Descarga el video sin marca de agua a temp/video_in.mp4.
+ * @returns {Promise<string>} ruta del archivo descargado
+ */
+async function downloadTikTok(tiktokUrl) {
+  const videoUrl = await resolveNoWatermarkUrl(tiktokUrl);
+  return downloadToInput(videoUrl, { Referer: 'https://www.tikwm.com/' });
+}
+
+/**
+ * Descarga un sticker de TikTok (enlace directo .awebp de ibyteimg.com) a temp/video_in.mp4.
+ * @returns {Promise<string>} ruta del archivo descargado
+ */
+async function downloadSticker(stickerUrl) {
+  return downloadToInput(stickerUrl);
+}
+
+module.exports = { downloadTikTok, downloadSticker };
