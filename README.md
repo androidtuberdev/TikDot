@@ -37,7 +37,7 @@ El flag `-o` puede ir antes o después del enlace. Los enlaces de stickers de Ti
 ## Instalación
 
 ```bash
-git clone https://github.com/<tu-usuario>/TikDot.git
+git clone https://github.com/androidtuberdev/TikDot.git
 cd TikDot
 npm install
 cp .env.example .env
@@ -73,7 +73,7 @@ Escanea el código QR que aparece en la terminal desde **WhatsApp → Dispositiv
 ```bash
 pkg update && pkg upgrade
 pkg install nodejs git ffmpeg chromium
-git clone https://github.com/<tu-usuario>/TikDot.git
+git clone https://github.com/androidtuberdev/TikDot.git
 cd TikDot
 PUPPETEER_SKIP_DOWNLOAD=true npm install
 ```
